@@ -3,10 +3,11 @@ export type ScormCourse = {
   passingScore: number;
   navigation: "free" | "sequential";
   completionRule: "all_completed" | "all_visited" | "passing_score" | "all_required";
+  theme?: { background: string; accent: string };
   contents: Array<{ id: string; title: string; path: string }>;
 };
 
-export const SCORM_BUILD = "2026.08.13-cloud.7";
+export const SCORM_BUILD = "2026.08.13-cloud.9";
 export const H5P_RUNTIME_DIRECTORY = "h5p-runtime-3.8.2";
 
 const xml = (value: string) => value
@@ -15,6 +16,33 @@ const xml = (value: string) => value
   .replaceAll(">", "&gt;")
   .replaceAll('"', "&quot;")
   .replaceAll("'", "&apos;");
+
+const safeHex = (value: string | undefined, fallback: string) => /^#[0-9a-f]{6}$/i.test(value || "") ? value!.toLowerCase() : fallback;
+
+function mixHex(color: string, target: "#000000" | "#ffffff", amount: number) {
+  const source = [1, 3, 5].map((offset) => Number.parseInt(color.slice(offset, offset + 2), 16));
+  const destination = target === "#ffffff" ? 255 : 0;
+  return `#${source.map((channel) => Math.round(channel + (destination - channel) * amount).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function themeCss(course: ScormCourse) {
+  const background = safeHex(course.theme?.background, "#07111f");
+  const accent = safeHex(course.theme?.accent, "#65e1b8");
+  const rgb = [1, 3, 5].map((offset) => Number.parseInt(background.slice(offset, offset + 2), 16) / 255);
+  const luminance = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2];
+  const light = luminance > 0.58;
+  const target = light ? "#000000" : "#ffffff";
+  const text = light ? "#111827" : "#f5f8fc";
+  const muted = light ? "#475569" : "#9aabc1";
+  const panel = mixHex(background, target, 0.07);
+  const panelStrong = mixHex(background, target, 0.03);
+  const panelSoft = mixHex(background, target, 0.13);
+  const line = mixHex(background, target, 0.22);
+  const accentRgb = [1, 3, 5].map((offset) => Number.parseInt(accent.slice(offset, offset + 2), 16) / 255);
+  const accentLuminance = 0.2126 * accentRgb[0] + 0.7152 * accentRgb[1] + 0.0722 * accentRgb[2];
+  const accentContrast = accentLuminance > 0.58 ? "#06251f" : "#ffffff";
+  return `:root{--bg:${background};--panel:${panel};--panel-strong:${panelStrong};--panel-soft:${panelSoft};--line:${line};--text:${text};--muted:${muted};--accent:${accent};--accent-contrast:${accentContrast}}.topbar,footer{background:var(--panel-strong)}.icon-button,footer button{background:var(--panel-soft);color:var(--text);border-color:var(--line)}.course-item:hover,.course-item.active{background:var(--panel-soft)}.item-number{background:var(--panel-soft)}.progress>div{background:var(--line)}.content-area{background:var(--bg)}`;
+}
 
 export function manifestXml(title: string, files: string[]) {
   const fileEntries = files.map((file) => `      <file href="${xml(file)}"/>`).join("\n");
@@ -40,7 +68,14 @@ ${fileEntries}
 }
 
 export function indexHtml(course: ScormCourse) {
-  const data = JSON.stringify(course).replaceAll("<", "\\u003c");
+  const normalizedCourse: ScormCourse = {
+    ...course,
+    theme: {
+      background: safeHex(course.theme?.background, "#07111f"),
+      accent: safeHex(course.theme?.accent, "#65e1b8")
+    }
+  };
+  const data = JSON.stringify(normalizedCourse).replaceAll("<", "\\u003c");
   return `<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -48,6 +83,7 @@ export function indexHtml(course: ScormCourse) {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${xml(course.title)}</title>
   <link rel="stylesheet" href="player/player.css">
+  <style>${themeCss(normalizedCourse)}</style>
 </head>
 <body>
   <div class="course-shell">
@@ -55,7 +91,7 @@ export function indexHtml(course: ScormCourse) {
       <button id="menu-toggle" class="icon-button" type="button" aria-label="إظهار أو إخفاء قائمة المحتويات">☰</button>
       <div class="course-heading"><strong id="course-title"></strong><span id="current-title"></span></div>
       <div class="score"><span id="score-value">0%</span><small>النتيجة</small></div>
-      <div class="progress"><span id="progress-label">0%</span><div><i id="progress-bar"></i></div></div>
+    <div class="progress"><span id="progress-label">إنجاز المقرر: 0% — مكتمل 0 من 0</span><div><i id="progress-bar"></i></div></div>
     </header>
     <div class="workspace">
       <aside id="sidebar"><h2>محتويات المقرر</h2><nav id="course-menu"></nav></aside>
@@ -162,6 +198,7 @@ export const PLAYER_JS = String.raw`(function () {
   var count = course.contents.length;
   var state = { c: 0, v: Array(count).fill(0), d: Array(count).fill(0), s: Array(count).fill(null) };
   var connectedDispatchers = [];
+  var connectedVideoInstances = [];
 
   var menu = document.getElementById("course-menu");
   var container = document.getElementById("h5p-container");
@@ -270,7 +307,7 @@ export const PLAYER_JS = String.raw`(function () {
     var completed = state.d.filter(Boolean).length;
     var visited = state.v.filter(Boolean).length;
     var progress = Math.round((course.completionRule === "all_visited" ? visited : completed) / count * 100);
-    document.getElementById("progress-label").textContent = progress + "%";
+    document.getElementById("progress-label").textContent = "إنجاز المقرر: " + progress + "% — مكتمل " + completed + " من " + count;
     document.getElementById("progress-bar").style.width = progress + "%";
     document.getElementById("score-value").textContent = courseScore() + "%";
     document.getElementById("position").textContent = (state.c + 1) + " / " + count;
@@ -296,8 +333,33 @@ export const PLAYER_JS = String.raw`(function () {
     verb = String(verb).toLowerCase().split("/").pop();
     var score = scoreFromResult(statement.result);
     if (score !== null) state.s[index] = Math.max(0, Math.min(100, score));
-    if (["completed", "passed", "failed"].indexOf(verb) >= 0) state.d[index] = 1;
     persist();
+  }
+
+  function markVideoCompleted(index) {
+    if (state.d[index]) return;
+    state.d[index] = 1;
+    persist();
+  }
+
+  function connectVideoCompletion(frameH5P, instance, index) {
+    if (!instance || connectedVideoInstances.indexOf(instance) >= 0) return;
+    connectedVideoInstances.push(instance);
+
+    var video = instance.video;
+    if (video && typeof video.on === "function") {
+      video.on("stateChange", function (event) {
+        var endedState = frameH5P && frameH5P.Video ? frameH5P.Video.ENDED : null;
+        if (endedState !== null && event && event.data === endedState) markVideoCompleted(index);
+      });
+    }
+
+    try {
+      var element = instance.$container && instance.$container[0]
+        ? instance.$container[0].querySelector("video")
+        : null;
+      if (element) element.addEventListener("ended", function () { markVideoCompleted(index); });
+    } catch (_) {}
   }
 
   function connectDispatcher(dispatcher, index) {
@@ -321,7 +383,7 @@ export const PLAYER_JS = String.raw`(function () {
           var frame = container.querySelector("iframe");
           var frameH5P = frame && frame.contentWindow && frame.contentWindow.H5P;
           if (frameH5P && Array.isArray(frameH5P.instances) && frameH5P.instances.length > 0) {
-            resolve();
+            resolve({ h5p: frameH5P, instance: frameH5P.instances[0] });
             return;
           }
         } catch (_) {}
@@ -369,6 +431,26 @@ export const PLAYER_JS = String.raw`(function () {
     message.append(title, help, diagnostic, retry);
   }
 
+  function requestPlayerResize() {
+    function resize() {
+      try {
+        var frame = container.querySelector("iframe");
+        var frameH5P = frame && frame.contentWindow && frame.contentWindow.H5P;
+        var instances = frameH5P && Array.isArray(frameH5P.instances) ? frameH5P.instances : [];
+        instances.forEach(function (instance) {
+          if (instance && typeof instance.trigger === "function") instance.trigger("resize");
+        });
+      } catch (_) {}
+      try {
+        var event = document.createEvent("Event");
+        event.initEvent("resize", false, false);
+        window.dispatchEvent(event);
+      } catch (_) {}
+    }
+    requestAnimationFrame(resize);
+    setTimeout(resize, 260);
+  }
+
   async function loadContent(index) {
     if (index === activeContentIndex && container.querySelector("iframe")) return;
     if (contentLoading) {
@@ -398,11 +480,13 @@ export const PLAYER_JS = String.raw`(function () {
         fullScreen: true,
         reportingIsEnabled: true
       });
-      await waitForH5PInstance(40);
+      var loaded = await waitForH5PInstance(40);
+      connectVideoCompletion(loaded.h5p, loaded.instance, index);
       activeContentIndex = index;
       message.textContent = "";
       message.className = "";
       watchForXAPI(index, 20);
+      requestPlayerResize();
     } catch (error) {
       showPlayerError(error, index);
     } finally {
@@ -414,6 +498,7 @@ export const PLAYER_JS = String.raw`(function () {
   document.getElementById("course-title").textContent = course.title;
   document.getElementById("menu-toggle").addEventListener("click", function () {
     document.body.classList.toggle("sidebar-collapsed");
+    requestPlayerResize();
   });
   previous.addEventListener("click", function () { if (state.c > 0) loadContent(state.c - 1); });
   next.addEventListener("click", function () { if (state.c < count - 1) loadContent(state.c + 1); });
@@ -422,4 +507,6 @@ export const PLAYER_JS = String.raw`(function () {
   loadContent(state.c);
 })();`;
 
-export const PLAYER_CSS = String.raw`:root{--bg:#07111f;--panel:#0d1b2d;--line:#23364e;--text:#f5f8fc;--muted:#9aabc1;--accent:#65e1b8}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}button{font:inherit}.course-shell{min-height:100vh;display:flex;flex-direction:column}.topbar{height:76px;display:flex;align-items:center;gap:18px;padding:12px 20px;background:#0b1727;border-bottom:1px solid var(--line)}.icon-button{border:1px solid var(--line);background:#14243a;color:var(--text);border-radius:9px;padding:8px 11px;cursor:pointer}.course-heading{display:flex;flex-direction:column;min-width:0;flex:1}.course-heading span{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.score{text-align:center}.score span{display:block;font-weight:800;color:var(--accent)}.score small{color:var(--muted)}.progress{width:min(240px,25vw);font-size:12px;color:var(--muted)}.progress>div{height:7px;background:#203149;border-radius:99px;margin-top:5px;overflow:hidden}.progress i{display:block;height:100%;width:0;background:var(--accent);transition:.25s}.workspace{display:flex;direction:rtl;flex:1;min-height:0}aside{width:280px;background:var(--panel);border-left:1px solid var(--line);padding:20px 14px;transition:.2s}aside h2{font-size:14px;color:var(--muted);margin:0 8px 16px}.course-item{width:100%;display:flex;align-items:center;gap:10px;text-align:right;border:0;background:transparent;color:var(--text);padding:12px;border-radius:10px;cursor:pointer;margin:3px 0}.course-item:hover,.course-item.active{background:#172a43}.course-item:disabled{opacity:.42;cursor:not-allowed}.item-number{direction:ltr;display:grid;place-items:center;min-width:32px;height:32px;border-radius:9px;background:#223650;color:var(--muted);font-size:12px}.course-item.done .item-number{background:#123d38;color:var(--accent)}.content-area{direction:ltr;flex:1;min-width:0;padding:20px;background:#f5f7fa;color:#111}.content-area #h5p-container{max-width:1200px;margin:auto}#status-message{text-align:center;color:#64748b;padding:8px}.loading-message{color:#475569!important}.error-message{color:#b42318!important;background:#fee4e2;border:1px solid #fda29b;border-radius:8px;padding:14px!important;direction:rtl}.error-message p{margin:8px 0}.diagnostic{direction:ltr;text-align:left;white-space:pre-wrap;background:#fff;border:1px solid #fda29b;border-radius:6px;padding:10px;color:#7a271a}.retry-button{border:0;border-radius:7px;background:#b42318;color:#fff;padding:8px 15px;cursor:pointer}.build-id{direction:ltr;color:#6f829b;font-size:10px}footer{height:68px;display:flex;justify-content:center;align-items:center;gap:18px;border-top:1px solid var(--line);background:#0b1727}footer button{border:1px solid var(--line);background:#182b43;color:var(--text);border-radius:9px;padding:9px 20px;cursor:pointer}footer button:disabled{opacity:.4;cursor:not-allowed}.sidebar-collapsed aside{display:none}@media(max-width:760px){.topbar{gap:10px;padding:10px}.progress{display:none}.score{font-size:13px}aside{position:fixed;z-index:20;top:76px;right:0;bottom:68px;width:min(85vw,320px);box-shadow:-12px 0 30px #0008}.sidebar-collapsed aside{display:none}.content-area{padding:8px}.course-heading strong{font-size:14px}}`;
+export const PLAYER_CSS = String.raw`:root{--bg:#07111f;--panel:#0d1b2d;--line:#23364e;--text:#f5f8fc;--muted:#9aabc1;--accent:#65e1b8}*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}button{font:inherit}.course-shell{min-height:100vh;display:flex;flex-direction:column}.topbar{height:76px;display:flex;align-items:center;gap:18px;padding:12px 20px;background:#0b1727;border-bottom:1px solid var(--line)}.icon-button{border:1px solid var(--line);background:#14243a;color:var(--text);border-radius:9px;padding:8px 11px;cursor:pointer}.course-heading{display:flex;flex-direction:column;min-width:0;flex:1}.course-heading span{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.score{text-align:center}.score span{display:block;font-weight:800;color:var(--accent)}.score small{color:var(--muted)}.progress{width:min(290px,30vw);font-size:12px;color:var(--muted)}.progress>span{display:block;direction:rtl;white-space:nowrap}.progress>div{height:7px;background:#203149;border-radius:99px;margin-top:5px;overflow:hidden}.progress i{display:block;height:100%;width:0;background:var(--accent);transition:.25s}.workspace{display:flex;direction:rtl;flex:1;min-height:0}aside{width:280px;background:var(--panel);border-left:1px solid var(--line);padding:20px 14px;transition:.2s}aside h2{font-size:14px;color:var(--muted);margin:0 8px 16px}.course-item{width:100%;display:flex;align-items:center;gap:10px;text-align:right;border:0;background:transparent;color:var(--text);padding:12px;border-radius:10px;cursor:pointer;margin:3px 0}.course-item:hover,.course-item.active{background:#172a43}.course-item:disabled{opacity:.42;cursor:not-allowed}.item-number{direction:ltr;display:grid;place-items:center;min-width:32px;height:32px;border-radius:9px;background:#223650;color:var(--muted);font-size:12px}.course-item.done .item-number{background:#123d38;color:var(--accent)}.content-area{direction:ltr;flex:1;min-width:0;padding:0;background:#000;color:#111;overflow:auto}.content-area #h5p-container{width:100%;max-width:none;margin:0}.content-area #h5p-container>iframe{display:block;width:100%!important}#status-message{text-align:center;color:#64748b;padding:8px;background:#f5f7fa}#status-message:empty{display:none}.loading-message{color:#475569!important}.error-message{color:#b42318!important;background:#fee4e2;border:1px solid #fda29b;border-radius:8px;padding:14px!important;direction:rtl}.error-message p{margin:8px 0}.diagnostic{direction:ltr;text-align:left;white-space:pre-wrap;background:#fff;border:1px solid #fda29b;border-radius:6px;padding:10px;color:#7a271a}.retry-button{border:0;border-radius:7px;background:#b42318;color:#fff;padding:8px 15px;cursor:pointer}.build-id{direction:ltr;color:#6f829b;font-size:10px}footer{height:68px;display:flex;justify-content:center;align-items:center;gap:18px;border-top:1px solid var(--line);background:#0b1727}footer button{border:1px solid var(--line);background:#182b43;color:var(--text);border-radius:9px;padding:9px 20px;cursor:pointer}footer button:disabled{opacity:.4;cursor:not-allowed}.sidebar-collapsed aside{display:none}@media(max-width:760px){.topbar{gap:10px;padding:10px}.progress{display:none}.score{font-size:13px}aside{position:fixed;z-index:20;top:76px;right:0;bottom:68px;width:min(85vw,320px);box-shadow:-12px 0 30px #0008}.sidebar-collapsed aside{display:none}.course-heading strong{font-size:14px}}`;
+
+export const PLAYER_RESPONSIVE_CSS = String.raw`.content-area #h5p-container{width:min(100%,calc(177.78vh - 320px));max-width:100%;margin:0 auto}@media(max-width:760px){.content-area #h5p-container{width:100%;max-width:none}}`;

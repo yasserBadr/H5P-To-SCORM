@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "vitest run --exclude .next/**"
+    "test": "vitest run --exclude .next/** --exclude work/** --exclude outputs/**"
   },
   "dependencies": {
     "@types/busboy": "^1.5.4",

@@ -16,6 +16,8 @@ export default function Home() {
   const [passingScore, setPassingScore] = useState(70);
   const [navigation, setNavigation] = useState("free");
   const [completionRule, setCompletionRule] = useState("all_completed");
+  const [playerBackground, setPlayerBackground] = useState("#07111f");
+  const [playerAccent, setPlayerAccent] = useState("#65e1b8");
 
   async function upload(files?: FileList | File[]) {
     const selected = Array.from(files || []).filter((file) => file.name.toLowerCase().endsWith(".h5p"));
@@ -60,11 +62,13 @@ export default function Home() {
       title: courseTitle,
       passingScore: String(passingScore),
       navigation,
-      completionRule
+      completionRule,
+      playerBackground,
+      playerAccent
     });
     items.forEach((item) => params.append("job", item.jobId));
     return `/api/scorm?${params.toString()}`;
-  }, [items, courseTitle, passingScore, navigation, completionRule]);
+  }, [items, courseTitle, passingScore, navigation, completionRule, playerBackground, playerAccent]);
 
   return <main className="shell">
     <section className="hero">
@@ -108,6 +112,8 @@ export default function Home() {
           <label className="field"><span>درجة الاجتياز</span><div className="number-field"><input type="number" min="0" max="100" value={passingScore} onChange={(event) => setPassingScore(Math.max(0, Math.min(100, Number(event.target.value))))} /><b>%</b></div></label>
           <label className="field"><span>التنقل</span><select value={navigation} onChange={(event) => setNavigation(event.target.value)}><option value="free">تنقل حر</option><option value="sequential">تسلسلي</option></select></label>
           <label className="field field-wide"><span>قاعدة الإكمال</span><select value={completionRule} onChange={(event) => setCompletionRule(event.target.value)}><option value="all_completed">إكمال جميع المحتويات</option><option value="all_visited">زيارة جميع المحتويات</option><option value="passing_score">تحقيق درجة الاجتياز</option><option value="all_required">إكمال جميع التفاعلات المطلوبة</option></select></label>
+          <label className="field"><span>لون خلفية مشغل SCORM</span><div className="color-field"><input type="color" value={playerBackground} onChange={(event) => setPlayerBackground(event.target.value)} /><code>{playerBackground.toUpperCase()}</code></div><small className="field-help">الشريط العلوي والقائمة والتذييل والمساحة المحيطة بالفيديو.</small></label>
+          <label className="field"><span>لون التمييز</span><div className="color-field"><input type="color" value={playerAccent} onChange={(event) => setPlayerAccent(event.target.value)} /><code>{playerAccent.toUpperCase()}</code></div><small className="field-help">شريط الإنجاز والنتيجة وعلامات الإكمال.</small></label>
         </div>
         <div style={{marginTop:22,padding:"13px 15px",border:"1px solid #5c4d2b",borderRadius:10,background:"#2a2415",color:"#f5d88a",lineHeight:1.7}}><strong>طريقة التشغيل:</strong> ارفع ملف ZIP الناتج نفسه إلى نظام LMS. لا تفك الضغط ولا تفتح <b style={{direction:"ltr",display:"inline-block"}}>index.html</b> مباشرة؛ للمعاينة استخدم زر «معاينة» أعلاه.</div>
         <div className="export-bar"><div><strong>حزمة مستقلة دون اتصال بالإنترنت</strong><p className="hint">تتضمن مشغل H5P والمكتبات والمحتوى وملف imsmanifest.xml.</p></div><a className="btn export-button" href={exportUrl}>تصدير SCORM 1.2 ZIP ↓</a></div>

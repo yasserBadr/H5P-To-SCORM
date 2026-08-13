@@ -22,7 +22,9 @@ export async function GET(request: Request) {
       courseTitle: url.searchParams.get("title") || "H5P Course",
       passingScore: Number.isFinite(passingScore) ? passingScore : 70,
       navigation: navigations.has(navigation) ? navigation : "free",
-      completionRule: rules.has(completionRule) ? completionRule : "all_completed"
+      completionRule: rules.has(completionRule) ? completionRule : "all_completed",
+      playerBackground: url.searchParams.get("playerBackground") || "#07111f",
+      playerAccent: url.searchParams.get("playerAccent") || "#65e1b8"
     });
     const size = (await stat(generated.zipPath)).size;
     const source = createReadStream(generated.zipPath);

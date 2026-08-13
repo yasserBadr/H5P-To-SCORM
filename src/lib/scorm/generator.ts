@@ -6,7 +6,7 @@ import path from "node:path";
 import { jobDir, readMeta, validJobId } from "@/lib/jobs/storage";
 import { prepareH5PPackage } from "@/lib/h5p/dependency-resolver";
 import { LAUNCH_WARNING_CSS } from "./extra-css";
-import { H5P_RUNTIME_DIRECTORY, indexHtml, manifestXml, PACKAGE_README, PLAYER_CSS, PLAYER_JS, SCORM_12_JS, SCORM_BUILD, type ScormCourse } from "./templates";
+import { H5P_RUNTIME_DIRECTORY, indexHtml, manifestXml, PACKAGE_README, PLAYER_CSS, PLAYER_JS, PLAYER_RESPONSIVE_CSS, SCORM_12_JS, SCORM_BUILD, type ScormCourse } from "./templates";
 
 export type ScormSettings = {
   jobIds: string[];
@@ -14,7 +14,11 @@ export type ScormSettings = {
   passingScore: number;
   navigation: ScormCourse["navigation"];
   completionRule: ScormCourse["completionRule"];
+  playerBackground: string;
+  playerAccent: string;
 };
+
+const safeColor = (value: string, fallback: string) => /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
 
 async function listFiles(root: string, directory = root): Promise<string[]> {
   const found: string[] = [];
@@ -73,6 +77,10 @@ export async function generateScormPackage(settings: ScormSettings) {
     passingScore: Math.max(0, Math.min(100, Math.round(settings.passingScore))),
     navigation: settings.navigation,
     completionRule: settings.completionRule,
+    theme: {
+      background: safeColor(settings.playerBackground, "#07111f"),
+      accent: safeColor(settings.playerAccent, "#65e1b8")
+    },
     contents
   };
 
@@ -89,7 +97,7 @@ export async function generateScormPackage(settings: ScormSettings) {
     writeFile(path.join(packageDirectory, "index.html"), indexHtml(course), "utf8"),
     writeFile(path.join(packageDirectory, "course", "course.json"), JSON.stringify(course, null, 2), "utf8"),
     writeFile(path.join(packageDirectory, "player", "player.js"), PLAYER_JS, "utf8"),
-    writeFile(path.join(packageDirectory, "player", "player.css"), PLAYER_CSS + LAUNCH_WARNING_CSS, "utf8"),
+    writeFile(path.join(packageDirectory, "player", "player.css"), PLAYER_CSS + PLAYER_RESPONSIVE_CSS + LAUNCH_WARNING_CSS, "utf8"),
     writeFile(path.join(packageDirectory, "scorm", "scorm12.js"), SCORM_12_JS, "utf8"),
     writeFile(path.join(packageDirectory, "SCORM-README.txt"), PACKAGE_README, "utf8")
   ]);
