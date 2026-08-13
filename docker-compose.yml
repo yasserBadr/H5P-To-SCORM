@@ -1,0 +1,7 @@
+services:
+  app:
+    build: .
+    ports: ["3000:3000"]
+    environment:
+      MAX_UPLOAD_SIZE_MB: 1000
+      H5P_JOB_TTL_HOURS: 6

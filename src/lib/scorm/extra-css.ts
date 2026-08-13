@@ -1,0 +1,1 @@
+export const LAUNCH_WARNING_CSS = String.raw`.launch-warning{max-width:760px;margin:12vh auto;padding:34px;line-height:1.9;background:var(--panel);border:1px solid var(--line);border-radius:18px}.launch-warning h1{margin-top:0;color:var(--accent)}.launch-warning b{direction:ltr;display:inline-block}`;
