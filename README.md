@@ -1,146 +1,85 @@
-# H5P Interactive Video → SCORM 1.2
+# H5P Interactive Video to SCORM 1.2
 
-تطبيق ويب عربي مبني باستخدام Next.js لتحويل ملف واحد أو عدة ملفات
-`H5P.InteractiveVideo` إلى حزمة SCORM 1.2 واحدة قابلة للرفع إلى أنظمة إدارة التعلم.
+تطبيق ويب يحوّل ملفًا واحدًا أو عدة ملفات `H5P.InteractiveVideo` إلى حزمة SCORM 1.2 جاهزة للرفع إلى أنظمة إدارة التعلم.
 
-> الإصدار الحالي: `2026.08.13-cloud.9`
+## العربية
 
-## ماذا يقدم التطبيق؟
+### المزايا
 
-- رفع ملف H5P واحد أو عدة ملفات.
+- رفع عدة ملفات H5P وترتيبها داخل مقرر واحد.
 - معاينة الفيديو التفاعلي قبل التصدير.
-- دمج عدة فيديوهات في مقرر SCORM واحد مع قائمة تنقل.
-- تضمين مشغل H5P والمكتبات المطلوبة داخل الحزمة الناتجة.
-- حفظ حالة الإكمال والنتيجة والاستئناف عبر SCORM 1.2.
-- احتساب إنجاز كل فيديو عند وصوله إلى النهاية، مع فصل الإنجاز عن درجة التفاعلات.
-- تخصيص لون خلفية واجهة SCORM ولون التمييز قبل التصدير.
-- إعادة قياس الفيديو عند فتح قائمة المحتويات أو إخفائها مع إبقاء أدوات التحكم ظاهرة.
-- تشغيل المحتوى دون الاعتماد على الإنترنت بعد رفع الحزمة إلى نظام التعلم.
+- تصدير حزمة مستقلة تتضمن مشغل H5P والمكتبات المطلوبة.
+- حفظ موضع المتعلم وحالة الإكمال والنتيجة عبر SCORM.
+- احتساب إكمال الفيديو عند وصوله إلى النهاية.
+- تنقل حر أو تسلسلي مع تخصيص ألوان واجهة SCORM.
 
-## الاستفادة من هذا المستودع
+### التشغيل
 
-يمكن استخدام المستودع بوصفه:
-
-- نسخة احتياطية محفوظة للكود ومكتبات H5P.
-- مصدرًا لتنزيل التطبيق وتشغيله على أي جهاز آخر.
-- سجلًا واضحًا للتعديلات مع إمكانية الرجوع إلى إصدار سابق.
-- نقطة انطلاق للتطوير أو مشاركة العمل مع مطورين آخرين.
-
-لا تُرفع ملفات H5P التي يدخلها المستخدم أو حزم SCORM الناتجة تلقائيًا إلى GitHub؛
-فهي ملفات تشغيل مؤقتة، وقد استُبعدت من المستودع عبر `.gitignore`.
-
-## الحصول على المشروع من GitHub
-
-### الاستنساخ باستخدام Git
-
-```powershell
-git clone https://github.com/USERNAME/h5p-to-scorm.git
-cd h5p-to-scorm
-npm install
-npm run dev
-```
-
-استبدل `USERNAME` واسم المستودع بالقيم الفعلية. إذا كان المستودع خاصًا، سيطلب
-GitHub تسجيل الدخول من خلال Git أو المتصفح.
-
-### التنزيل من المتصفح
-
-من صفحة المستودع اختر **Code → Download ZIP**، ثم فك الضغط وافتح PowerShell داخل
-مجلد المشروع ونفّذ:
+يتطلب Node.js 20 أو أحدث وnpm:
 
 ```powershell
 npm install
 npm run dev
 ```
 
-بعد ذلك افتح `http://localhost:3000`.
+افتح `http://localhost:3000`، ارفع ملفات `.h5p`، اضبط الإعدادات، ثم اختر **تصدير SCORM 1.2 ZIP**.
 
-## استخدام التطبيق
-
-1. افتح التطبيق في المتصفح.
-2. ارفع ملفات `H5P.InteractiveVideo`.
-3. افتح المعاينة وتأكد من تشغيل كل فيديو والتنقل بينها.
-4. أدخل بيانات المقرر المطلوبة.
-5. اضغط **تصدير SCORM 1.2 ZIP**.
-6. ارفع ملف ZIP الناتج نفسه إلى نظام إدارة التعلم دون فك ضغطه.
-
-لا تفتح `index.html` مباشرة عبر `file://`؛ يجب تقديم الحزمة من خلال نظام التعلم
-أو خادم HTTP/HTTPS.
-
-## المتطلبات
-
-- Node.js 20 أو أحدث.
-- npm.
-
-## أوامر التشغيل والبناء
+### الاختبار والإنتاج
 
 ```powershell
-# وضع التطوير
-npm run dev
-
-# تشغيل الاختبارات
 npm test
-
-# إنشاء نسخة الإنتاج وتشغيلها
 npm run build
 npm start
 ```
 
-## التشغيل باستخدام Docker
+### Docker
 
 ```powershell
 docker compose up --build
 ```
 
-ثم افتح `http://localhost:3000`.
+> ارفع ملف ZIP الناتج إلى نظام التعلم دون فك ضغطه. لا تفتح `index.html` مباشرة عبر `file://`.
 
-## الإعدادات الاختيارية
+## English
 
-انسخ `.env.example` إلى `.env.local` إذا أردت تغيير الإعدادات:
+A Next.js web application that converts one or more `H5P.InteractiveVideo` files into a self-contained SCORM 1.2 package.
 
-```env
-MAX_UPLOAD_SIZE_MB=1000
-H5P_JOB_TTL_HOURS=6
-H5P_LIBRARY_CACHE_DIR=
-```
+### Features
 
-- `MAX_UPLOAD_SIZE_MB`: الحد الأقصى لحجم ملف الرفع.
-- `H5P_JOB_TTL_HOURS`: مدة الاحتفاظ بملفات المعالجة المؤقتة.
-- `H5P_LIBRARY_CACHE_DIR`: مسار بديل لمكتبات H5P؛ الافتراضي هو `vendor/h5p-libraries`.
+- Upload and reorder multiple H5P files.
+- Preview interactive video content before export.
+- Bundle the H5P runtime, libraries, and content in the exported package.
+- Track learner location, completion, and score through SCORM.
+- Mark a video complete when playback reaches the end.
+- Free or sequential navigation with customizable SCORM theme colors.
 
-## حفظ التعديلات في المستودع
-
-بعد تعديل المشروع واختباره:
+### Local development
 
 ```powershell
-git add .
-git commit -m "Describe the update"
-git push
+npm install
+npm run dev
 ```
 
-يُفضّل كتابة رسالة قصيرة توضّح التعديل، مثل:
+Open `http://localhost:3000`, upload `.h5p` files, configure the course, and select **Export SCORM 1.2 ZIP**.
+
+### Test and production
 
 ```powershell
-git commit -m "Fix switching between H5P videos"
+npm test
+npm run build
+npm start
 ```
 
-## بنية المشروع
+### Docker
 
-```text
-src/                 صفحات التطبيق وواجهات API ومنطق H5P وSCORM
-tests/               الاختبارات الآلية
-vendor/h5p-libraries مكتبات H5P المحلية المطلوبة
-.env.example         نموذج إعدادات البيئة
-Dockerfile           بناء نسخة Docker للإنتاج
-docker-compose.yml   تشغيل التطبيق محليًا عبر Docker Compose
+```powershell
+docker compose up --build
 ```
 
-## رفع المشروع أول مرة إلى GitHub
+Upload the generated ZIP to your LMS without extracting it. Do not open `index.html` through `file://`.
 
-راجع [دليل الرفع اليدوي](GITHUB_UPLOAD_AR.md) لإنشاء مستودع خاص ورفع المشروع من
-PowerShell دون ربط حساب GitHub بـ Codex.
+### Supported scope
 
-## ملاحظة عن الاستضافة
-
-GitHub يحفظ المشروع ويتتبع إصداراته، لكنه لا يشغّل تطبيق Node.js هذا تلقائيًا.
-لإتاحته عبر الإنترنت يلزم نشره على خدمة تدعم Node.js وكتابة الملفات المؤقتة.
+- Input: `H5P.InteractiveVideo`
+- Output: SCORM 1.2
+- Temporary uploads and generated packages are excluded from Git by `.gitignore`.
